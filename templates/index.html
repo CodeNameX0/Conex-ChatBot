@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conex 챗봇</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #2d2d2d;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            border: 1px solid #404040;
+        }
+
+        .chat-header {
+            background: #333333;
+            padding: 20px;
+            text-align: center;
+            color: #ffffff;
+            border-bottom: 1px solid #404040;
+        }
+
+        .chat-header h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #252525;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 400px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 15px;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            line-height: 1.5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .message.user .message-bubble {
+            background: #0066cc;
+            color: #ffffff;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.user .message-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -8px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid #0066cc;
+            border-bottom: 8px solid transparent;
+        }
+
+        .message.ai .message-bubble {
+            background: #3d3d3d;
+            color: #e0e0e0;
+            border: 1px solid #505050;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message.ai .message-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border-right: 8px solid #3d3d3d;
+            border-bottom: 8px solid transparent;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .message.user .message-avatar {
+            background: #0066cc;
+            color: #ffffff;
+        }
+
+        .message.ai .message-avatar {
+            background: #404040;
+            color: #ffffff;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: #2d2d2d;
+            border-top: 1px solid #404040;
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 50px;
+            max-height: 120px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            border: 2px solid #404040;
+            padding: 15px;
+            border-radius: 24px;
+            font-size: 16px;
+            resize: none;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        button {
+            background: #0066cc;
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        button:hover {
+            background: #0052a3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #555555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            color: #888888;
+            font-style: italic;
+            padding: 10px 20px;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            background: #0066cc;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            } 40% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        ::placeholder {
+            color: #888888;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #888888;
+            font-style: italic;
+            margin: 50px 0;
+            font-size: 16px;
+        }
+
+        /* 스크롤바 스타일링 */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #555555;
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #666666;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+
+            .chat-container {
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                margin: 0;
+                width: 100vw;
+                max-width: 100vw;
+            }
+
+            .chat-header {
+                padding: 15px 20px;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            .chat-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .chat-messages {
+                padding: 15px 10px;
+                gap: 12px;
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .message {
+                margin-bottom: 12px;
+            }
+
+            .message-bubble {
+                max-width: 80%;
+                padding: 12px 16px;
+                font-size: 15px;
+                line-height: 1.4;
+                border-radius: 16px;
+            }
+
+            .message.user .message-bubble {
+                border-bottom-right-radius: 4px;
+            }
+
+            .message.ai .message-bubble {
+                border-bottom-left-radius: 4px;
+            }
+
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 11px;
+                margin: 0 8px;
+            }
+
+            .chat-input-container {
+                padding: 15px 10px;
+                background: #2d2d2d;
+                position: sticky;
+                bottom: 0;
+                z-index: 100;
+            }
+
+            .chat-form {
+                gap: 8px;
+            }
+
+            textarea {
+                font-size: 16px; /* iOS zoom 방지 */
+                min-height: 44px; /* iOS 터치 가능 최소 크기 */
+                padding: 12px 16px;
+                border-radius: 20px;
+                max-height: 100px;
+            }
+
+            button {
+                width: 44px; /* iOS 터치 가능 최소 크기 */
+                height: 44px;
+                font-size: 16px;
+            }
+
+            .welcome-message {
+                margin: 30px 0;
+                font-size: 15px;
+                padding: 0 20px;
+            }
+
+            .loading {
+                padding: 8px 15px;
+                gap: 8px;
+            }
+        }
+
+        /* 매우 작은 화면 (iPhone SE 등) */
+        @media (max-width: 375px) {
+            .chat-header {
+                padding: 12px 15px;
+            }
+
+            .chat-header h2 {
+                font-size: 1.2rem;
+            }
+
+            .chat-messages {
+                padding: 12px 8px;
+            }
+
+            .message-bubble {
+                max-width: 85%;
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+
+            .message-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 10px;
+                margin: 0 6px;
+            }
+
+            .chat-input-container {
+                padding: 12px 8px;
+            }
+
+            textarea {
+                font-size: 16px;
+                min-height: 42px;
+                padding: 10px 14px;
+            }
+
+            button {
+                width: 42px;
+                height: 42px;
+                font-size: 15px;
+            }
+        }
+
+        /* 가로 모드 최적화 */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .chat-header {
+                padding: 10px 15px;
+            }
+
+            .chat-header h2 {
+                font-size: 1.1rem;
+            }
+
+            .chat-messages {
+                padding: 10px;
+            }
+
+            .welcome-message {
+                margin: 20px 0;
+            }
+        }
+
+        /* 터치 디바이스 최적화 */
+        @media (hover: none) and (pointer: coarse) {
+            button:hover {
+                transform: none;
+                background: #0066cc;
+            }
+
+            button:active {
+                transform: scale(0.95);
+                background: #0052a3;
+            }
+
+            .message-bubble {
+                -webkit-touch-callout: none;
+                -webkit-user-select: text;
+                user-select: text;
+            }
+        }
+
+        /* 스크롤바 모바일 숨김 */
+        @media (max-width: 768px) {
+            .chat-messages::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .chat-messages {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>Conex 챗봇</h2>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                안녕하세요! 무엇이든 편하게 물어보세요.
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="message-avatar">AI</div>
+            <div>
+                답변을 생성하고 있습니다
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <form id="chat-form" class="chat-form">
+                <div class="input-wrapper">
+                    <textarea name="user_input" id="userInput" placeholder="메시지 입력..." rows="1"></textarea>
+                </div>
+                <button type="submit" id="sendBtn">→</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('chat-form');
+        const chatMessages = document.getElementById('chatMessages');
+        const loadingDiv = document.getElementById('loading');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const welcomeMessage = document.querySelector('.welcome-message');
+
+        // 모바일 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // 모바일에서 textarea 높이 조정
+        const maxHeight = isMobile ? 100 : 120;
+
+        // 자동 리사이즈 텍스트 영역
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, maxHeight) + 'px';
+        });
+
+        // 모바일에서 부드러운 스크롤
+        function smoothScrollToBottom() {
+            const scrollOptions = {
+                top: chatMessages.scrollHeight,
+                behavior: 'smooth'
+            };
+            
+            if (isMobile) {
+                // 모바일에서는 즉시 스크롤
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else {
+                chatMessages.scrollTo(scrollOptions);
+            }
+        }
+
+        // 메시지 추가 함수
+        function addMessage(content, isUser = false) {
+            // 환영 메시지 제거
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${isUser ? 'You' : 'AI'}</div>
+                <div class="message-bubble">${content}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // 부드러운 스크롤
+            setTimeout(smoothScrollToBottom, 100);
+        }
+
+        // 모바일 키보드 대응
+        if (isMobile) {
+            // iOS Safari에서 키보드가 올라올 때 뷰포트 조정
+            const initialViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    const currentHeight = window.visualViewport.height;
+                    const heightDiff = initialViewportHeight - currentHeight;
+                    
+                    if (heightDiff > 150) { // 키보드가 올라온 상태
+                        document.body.style.height = currentHeight + 'px';
+                        setTimeout(smoothScrollToBottom, 300);
+                    } else { // 키보드가 내려간 상태
+                        document.body.style.height = '100vh';
+                    }
+                });
+            }
+            
+            // 모바일에서 입력창 포커스 시 스크롤 조정
+            userInput.addEventListener('focus', () => {
+                setTimeout(() => {
+                    userInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 300);
+            });
+        }
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const inputValue = userInput.value.trim();
+            
+            if (!inputValue) {
+                return;
+            }
+
+            // 사용자 메시지 추가
+            addMessage(inputValue, true);
+            
+            // 입력창 초기화
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            
+            // 모바일에서 키보드 숨기기 (선택적)
+            if (isMobile) {
+                userInput.blur();
+                setTimeout(() => userInput.focus(), 100);
+            }
+            
+            // 로딩 상태 표시
+            loadingDiv.classList.add('show');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '...';
+
+            try {
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "user_input=" + encodeURIComponent(inputValue)
+                });
+
+                if (!response.ok) {
+                    throw new Error('서버 오류가 발생했습니다.');
+                }
+
+                const text = await response.text();
+                
+                // 로딩 숨기기
+                loadingDiv.classList.remove('show');
+                
+                // AI 응답 추가
+                addMessage(text.replace(/\n/g, '<br>'));
+                
+            } catch (error) {
+                loadingDiv.classList.remove('show');
+                addMessage(`오류: ${error.message}`);
+            } finally {
+                // 버튼 활성화
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '→';
+                
+                // 모바일이 아닐 때만 자동 포커스
+                if (!isMobile) {
+                    userInput.focus();
+                }
+            }
+        };
+
+        // Enter 키로 전송 (Shift+Enter는 줄바꿈)
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                form.onsubmit(e);
+            }
+        });
+
+        // 터치 스와이프로 키보드 숨기기 (모바일)
+        if (isMobile) {
+            let startY = 0;
+            
+            chatMessages.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            });
+            
+            chatMessages.addEventListener('touchend', (e) => {
+                const endY = e.changedTouches[0].clientY;
+                const diffY = startY - endY;
+                
+                // 아래로 스와이프하면 키보드 숨기기
+                if (diffY < -50 && document.activeElement === userInput) {
+                    userInput.blur();
+                }
+            });
+        }
+
+        // 페이지 로드 시 입력창에 포커스 (데스크톱만)
+        if (!isMobile) {
+            userInput.focus();
+        }
+
+        // PWA 지원을 위한 뷰포트 메타 태그 동적 추가
+        if (isMobile) {
+            const viewport = document.querySelector('meta[name="viewport"]');
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+        }
+    </script>
+</body>
+</html>
