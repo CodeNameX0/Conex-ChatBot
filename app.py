@@ -93,4 +93,4 @@ if __name__ == "__main__":
 
 # Vercel을 위한 WSGI 설정
 # Vercel은 이 변수를 찾아서 앱을 실행합니다
-handler = app
+app = app
