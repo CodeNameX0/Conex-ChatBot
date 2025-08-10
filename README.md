@@ -268,16 +268,16 @@ git push heroku main
 
 #### 2. Replit 배포 (가장 쉬움 🎯)
 
-**1단계: Replit에서 프로젝트 가져오기**
-- https://replit.com 접속
-- "Import from GitHub" 선택
-- 레포지토리 URL 입력
+**완전한 Replit 배포 가이드는 `REPLIT_GUIDE.md`를 참고하세요!**
 
-**2단계: 환경 변수 설정**
-- Secrets 탭에서 `GROQ_API_KEY` 추가
+**빠른 시작:**
+1. https://replit.com 에 로그인
+2. "Create Repl" → "Import from GitHub" 선택
+3. 레포지토리 URL 입력
+4. Tools → Secrets에서 `GROQ_API_KEY` 추가
+5. "Run" 버튼 클릭하면 배포 완료!
 
-**3단계: 실행**
-- Run 버튼 클릭하면 바로 배포 완료!
+**상세한 단계별 가이드, 문제 해결, 커스터마이징 방법은 [REPLIT_GUIDE.md](REPLIT_GUIDE.md)에서 확인하세요.**
 
 #### 3. Vercel 배포
 
