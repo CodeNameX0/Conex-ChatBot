@@ -1,4 +1,4 @@
-# [Conex 챗봇 - Groq API 가이드](https://codenamex0.github.io/Conex-ChatBot/)
+# [Conex 챗봇 - Groq API 가이드](https://99c5286f-6014-46eb-baf0-b487e1f6983e-00-muca4euk75s4.sisko.replit.dev/)
 
 ## 프로젝트 소개
 
