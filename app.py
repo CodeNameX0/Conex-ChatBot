@@ -2,11 +2,33 @@ from flask import Flask, render_template, request
 from groq import Groq
 import os
 from dotenv import load_dotenv
+import threading
+import time
+import requests
 
 # .env 파일 로드 (있는 경우)
 load_dotenv()
 
 app = Flask(__name__)
+
+# Replit 자동 깨우기 함수
+def keep_alive():
+    def run():
+        while True:
+            try:
+                # 자기 자신에게 ping (Replit에서만 작동)
+                if os.getenv('REPL_ID'):  # Replit 환경인지 확인
+                    requests.get(f"https://{os.getenv('REPL_SLUG')}.{os.getenv('REPL_OWNER')}.repl.co")
+            except:
+                pass
+            time.sleep(300)  # 5분마다
+    
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+
+# 자동 깨우기 시작 (Replit에서만)
+if os.getenv('REPL_ID'):
+    keep_alive()
 
 # Groq API 키 설정 (보안 우선순위: 환경변수 > .env 파일)
 api_key = os.getenv('GROQ_API_KEY')
