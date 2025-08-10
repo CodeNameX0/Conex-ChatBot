@@ -38,9 +38,22 @@ SYSTEM_PROMPT = """
 def home():
     return render_template("index.html")
 
+@app.route("/status")
+def status():
+    """디버깅을 위한 상태 확인 엔드포인트"""
+    return {
+        'api_key_set': bool(api_key and api_key not in ["YOUR_GROQ_API_KEY", "your_groq_api_key_here"]),
+        'api_key_length': len(api_key) if api_key else 0,
+        'environment': 'vercel' if os.getenv('VERCEL') else 'local'
+    }
+
 @app.route("/ask", methods=["POST"])
 def ask():
     user_input = request.form["user_input"]
+    
+    # API 키 확인
+    if not api_key or api_key in ["YOUR_GROQ_API_KEY", "your_groq_api_key_here"]:
+        return "❌ API 키가 설정되지 않았습니다. /status 엔드포인트에서 확인해보세요."
     
     try:
         chat_completion = client.chat.completions.create(
