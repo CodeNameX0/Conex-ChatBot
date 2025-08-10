@@ -77,3 +77,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
+# Vercel을 위한 WSGI 설정
+# Vercel은 이 변수를 찾아서 앱을 실행합니다
+handler = app
